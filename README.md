@@ -4,7 +4,7 @@ App Android mínima de uso personal: publica una sesión de música falsa para q
 
 - ⏯ `POST {hubUrl}/api/mando/creatina` (Bearer `hubToken`)
 - ⏭ `GET {pingUrl}/api/widget/ping?token={pingToken}&user={pingUser}`
-- ⏮ graba audio (OGG/Opus, 2.ª pulsación o 20 s) y lo envía a `POST {hubUrl}/api/mando/comida`
+- ⏮ graba audio (OGG/Opus, 2.ª pulsación o 20 s) y lo envía a `POST {hubUrl}/api/mando/comida`. En la app se puede elegir entre el micrófono del móvil o el micrófono del reloj (Bluetooth SCO: abre llamada en el GTS 2 y envía al colgar).
 
 El título de la «canción» muestra el estado. Los servidores no están en este repo.
 
