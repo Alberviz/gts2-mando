@@ -139,20 +139,32 @@ class ScoAudioHelper(private val context: Context) {
      * Comprueba si el dispositivo soporta y tiene disponible un enlace Bluetooth SCO (reloj conectado).
      */
     fun isScoAvailable(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             if (context.checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-                false
-            } else {
-                getScoDevice() != null
+                return false
             }
-        } else {
-            @Suppress("DEPRECATION")
-            audioManager.isBluetoothScoAvailableOffCall
         }
+        val inputs = audioManager.getDevices(AudioManager.GET_DEVICES_INPUTS)
+        val outputs = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
+        val hasBtDevice = inputs.any { it.isBluetoothDevice() } || outputs.any { it.isBluetoothDevice() }
+        if (hasBtDevice) return true
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (audioManager.availableCommunicationDevices.any { it.isBluetoothDevice() }) return true
+        }
+
+        @Suppress("DEPRECATION")
+        return audioManager.isBluetoothScoAvailableOffCall
+    }
+
+    private fun AudioDeviceInfo.isBluetoothDevice(): Boolean {
+        return type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO ||
+            type == AudioDeviceInfo.TYPE_BLE_HEADSET ||
+            (Build.VERSION.SDK_INT >= 31 && type == AudioDeviceInfo.TYPE_BLE_SPEAKER)
     }
 
     /**
-     * En Android 12+ (API 31+) busca el AudioDeviceInfo tipo TYPE_BLUETOOTH_SCO disponible.
+     * En Android 12+ (API 31+) busca el AudioDeviceInfo tipo TYPE_BLUETOOTH_SCO o TYPE_BLE_HEADSET disponible.
      * En Android 10-11 devuelve null.
      */
     fun getScoDevice(): AudioDeviceInfo? {
@@ -161,7 +173,7 @@ class ScoAudioHelper(private val context: Context) {
                 return null
             }
             return audioManager.availableCommunicationDevices.firstOrNull {
-                it.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO
+                it.isBluetoothDevice()
             }
         }
         return null
@@ -197,54 +209,51 @@ class ScoAudioHelper(private val context: Context) {
         isReceiverRegistered = true
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            // 1. Verifica permiso BLUETOOTH_CONNECT y obtén scoDevice = getScoDevice()
-            val scoDevice = getScoDevice()
-            if (scoDevice == null) {
-                Eventos.log("SCO: reloj no disponible")
-                val l = currentListener
-                stopSco()
-                l?.onScoError("reloj no disponible")
-                return
-            }
-
-            // 2. audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
+            // 1. Establecer MODE_IN_COMMUNICATION primero: Android requiere este modo para enumerar y enrutar SCO
             audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
 
-            // 3. setCommunicationDevice(scoDevice)
-            val ok = audioManager.setCommunicationDevice(scoDevice)
-            if (!ok) {
-                Eventos.log("SCO: fallo al enrutar reloj con setCommunicationDevice")
-                val l = currentListener
-                stopSco()
-                l?.onScoError("fallo al enrutar reloj")
-                return
-            }
+            val scoDevice = getScoDevice()
+            if (scoDevice != null) {
+                Eventos.log("SCO: dispositivo encontrado (${scoDevice.productName}, tipo ${scoDevice.type})")
+                val ok = audioManager.setCommunicationDevice(scoDevice)
+                if (ok) {
+                    val commDevListener = AudioManager.OnCommunicationDeviceChangedListener { device ->
+                        if (device == null || !device.isBluetoothDevice()) {
+                            handleScoDisconnected("CommDeviceChanged")
+                        }
+                    }
+                    commListener = commDevListener
+                    audioManager.addOnCommunicationDeviceChangedListener(
+                        ContextCompat.getMainExecutor(context),
+                        commDevListener
+                    )
+                    isCommListenerRegistered = true
 
-            // Registra listener de cambio de dispositivo de comunicación (tras confirmar setCommunicationDevice)
-            val commDevListener = AudioManager.OnCommunicationDeviceChangedListener { device ->
-                if (device == null || device.type != AudioDeviceInfo.TYPE_BLUETOOTH_SCO) {
-                    handleScoDisconnected("CommDeviceChanged")
+                    // Lazy SCO Routing: arrancar MediaRecorder para que Android levante la radio SCO
+                    if (!listener.onStartRecorder(scoDevice)) {
+                        Eventos.log("SCO: onStartRecorder devolvió false en startSco")
+                        val l = currentListener
+                        stopSco()
+                        l?.onScoError("fallo al iniciar micro")
+                        return
+                    }
+                    recorderStarted = true
+                    main.postDelayed(timeoutConnect, TIMEOUT_CONNECT_MS)
+                    return
+                } else {
+                    Eventos.log("SCO: setCommunicationDevice falló, intentando fallback startBluetoothSco")
                 }
+            } else {
+                val devList = audioManager.availableCommunicationDevices.joinToString { "${it.productName}(tipo ${it.type})" }
+                Eventos.log("SCO: no encontrado en comm devices [$devList], intentando fallback startBluetoothSco")
             }
-            commListener = commDevListener
-            audioManager.addOnCommunicationDeviceChangedListener(
-                ContextCompat.getMainExecutor(context),
-                commDevListener
-            )
-            isCommListenerRegistered = true
 
-            // 4. Llama inmediatamente a onStartRecorder para que Android levante la radio SCO
-            // (Lazy SCO Routing Policy en Android 12-15)
-            if (!listener.onStartRecorder(scoDevice)) {
-                Eventos.log("SCO: onStartRecorder devolvió false en startSco")
-                val l = currentListener
-                stopSco()
-                l?.onScoError("fallo al iniciar micro")
-                return
-            }
-            recorderStarted = true
-
-            // 5. Programa timeoutConnect a 8 s
+            // Fallback para Android 12+: si setCommunicationDevice no está disponible en este OEM,
+            // usar el mecanismo tradicional de SCO virtual
+            @Suppress("DEPRECATION")
+            audioManager.startBluetoothSco()
+            @Suppress("DEPRECATION")
+            audioManager.isBluetoothScoOn = true
             main.postDelayed(timeoutConnect, TIMEOUT_CONNECT_MS)
         } else {
             // 1. Comprueba isBluetoothScoAvailableOffCall

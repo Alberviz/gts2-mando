@@ -201,7 +201,12 @@ class MandoService : Service() {
                     return error("sin permiso bluetooth")
                 }
             }
-            if (!scoHelper.isScoAvailable()) return error("reloj no disponible")
+            if (!scoHelper.isScoAvailable()) {
+                val inputs = getSystemService(AudioManager::class.java).getDevices(AudioManager.GET_DEVICES_INPUTS)
+                    .map { "${it.productName}(tipo ${it.type})" }
+                Eventos.log("SCO no disponible. Entradas detectadas: $inputs")
+                return error("reloj no disponible")
+            }
             main.removeCallbacks(volverABase)
             setTitulo("⏳ Conectando reloj…")
             scoHelper.startSco(object : ScoAudioHelper.Listener {
