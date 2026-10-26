@@ -33,4 +33,11 @@
     <!-- Registro -->
     <string name="registro_titulo">Registro de eventos</string>
     <string name="registro_vacio">Sin eventos aún…</string>
+
+    <!-- Selector de micrófono -->
+    <string name="label_micro_origen">Micrófono para comida</string>
+    <string name="micro_phone_label">📱 Micrófono del móvil</string>
+    <string name="micro_watch_label">⌚ Micrófono del reloj (Bluetooth SCO)</string>
+    <string name="micro_watch_hint">Al pulsar ⏮, el reloj abrirá la pantalla de llamada. Habla cuando aparezca y pulsa «Colgar» en el reloj para enviar.</string>
+    <string name="permiso_bt_necesario">Se necesita permiso de dispositivos cercanos para usar el micrófono del reloj</string>
 </resources>
