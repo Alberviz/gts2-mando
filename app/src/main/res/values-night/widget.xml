@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Colores pre-v31 oscuro: cálido oscuro -->
+    <color name="widget_background">#2A1619</color>
+    <color name="widget_heart">#FB7185</color>
+    <color name="widget_text">#FFE4E6</color>
+    <color name="widget_success">#4ADE80</color>
+    <color name="widget_wait">#FBBF24</color>
+    <color name="widget_error">#F87171</color>
+</resources>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Textos del widget -->
+    <string name="widget_name">Te echo de menos</string>
+    <string name="widget_description">Envía «te echo de menos» con un toque</string>
+    <string name="widget_sent">Enviado</string>
+    <string name="widget_error">Error</string>
+    <string name="widget_no_data">Sin datos</string>
+
+    <!-- Dimensiones -->
+    <dimen name="widget_radius">24dp</dimen>
+    <dimen name="widget_padding">6dp</dimen>
+    <dimen name="widget_icon_size">28dp</dimen>
+
+    <!-- Colores base / pre-v31 claro: cálido -->
+    <color name="widget_background">#FFF1F2</color>
+    <color name="widget_heart">#E11D48</color>
+    <color name="widget_text">#881337</color>
+    <color name="widget_success">#15803D</color>
+    <color name="widget_wait">#B45309</color>
+    <color name="widget_error">#B91C1C</color>
+</resources>
