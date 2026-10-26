@@ -15,6 +15,8 @@ export JAVA_HOME=<jdk 21> ANDROID_HOME=<sdk>
 ```
 
 ## Configurar
-Rellena los 5 campos a mano o copia al portapapeles líneas `clave=valor` (`hubUrl=…`, `hubToken=…`, `pingUrl=…`, `pingToken=…`, `pingUser=…`) y pulsa «Pegar config». Si el reloj no muestra el título, activa `audioSilencioso`.
+Rellena los 5 campos a mano o copia al portapapeles líneas `clave=valor` (`hubUrl=…`, `hubToken=…`, `pingUrl=…`, `pingToken=…`, `pingUser=…`) y pulsa «Pegar config». La app reproduce silencio continuo: sin audio real Android no le entrega los botones del reloj.
+
+Arranque: ajuste rápido «Mando» (cortina de notificaciones), aviso «toca para activar» al encender el móvil (Android 15+ no deja arrancarlo solo; en versiones anteriores arranca solo) y Android lo relanza si lo cierra.
 
 Depurar: `adb logcat -s mando` · simular botones: `adb shell cmd media_session dispatch next|play-pause|previous`.

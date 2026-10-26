@@ -36,6 +36,8 @@ class MandoService : Service() {
         private const val ARTISTA = "⏯ creatina · ⏭ ❤ · ⏮ comida"
         private const val MAX_GRABACION_MS = 20_000L
         private const val TITULO_TEMPORAL_MS = 5_000L
+        @Volatile var activo = false
+            private set
     }
 
     private val main = Handler(Looper.getMainLooper())
@@ -72,17 +74,31 @@ class MandoService : Service() {
             isActive = true
         }
         setTitulo(tituloBase())
-        arrancarPrimerPlano()
-        if (prefs.getBoolean("audioSilencioso", false)) arrancarSilencio()
+        if (!arrancarPrimerPlano()) {
+            // Android no deja ponerlo en primer plano desde segundo plano (p. ej. al relanzarlo): pedir un toque.
+            Arranque.avisar(this)
+            stopSelf()
+            return
+        }
+        // Sin audio real Android no entrega los botones del reloj a esta sesión.
+        arrancarSilencio()
+        activo = true
+        Arranque.quitarAviso(this)
+        Arranque.refrescarTile(this)
         Eventos.log("servicio iniciado")
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == ACCION_PARAR) stopSelf()
-        return START_NOT_STICKY
+        if (intent?.action == ACCION_PARAR) {
+            stopSelf()
+            return START_NOT_STICKY
+        }
+        return START_STICKY
     }
 
     override fun onDestroy() {
+        activo = false
+        Arranque.refrescarTile(this)
         main.removeCallbacksAndMessages(null)
         recorder?.runCatching { stop() }
         recorder?.release()
@@ -241,7 +257,8 @@ class MandoService : Service() {
 
     // --- Primer plano y audio silencioso ---
 
-    private fun arrancarPrimerPlano() {
+    /** false si Android no deja ponerlo en primer plano ni siquiera sin micro. */
+    private fun arrancarPrimerPlano(): Boolean {
         getSystemService(NotificationManager::class.java).createNotificationChannel(
             NotificationChannel(CANAL, "Mando", NotificationManager.IMPORTANCE_LOW)
         )
@@ -257,11 +274,17 @@ class MandoService : Service() {
             .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Parar", parar)
             .setStyle(MediaStyle().setMediaSession(session.sessionToken).setShowActionsInCompactView(0))
             .build()
-        var tipo = ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
-        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-            tipo = tipo or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+        val media = ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+        val conMicro = media or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+        val tieneMicro = checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+        // El micro solo se concede si se arranca desde un toque; si no, sigue sin él (la comida fallará).
+        for (tipo in if (tieneMicro) listOf(conMicro, media) else listOf(media)) {
+            val ok = runCatching { ServiceCompat.startForeground(this, NOTIF_ID, notif, tipo) }
+                .onFailure { Eventos.log("primer plano rechazado: ${it.javaClass.simpleName}") }
+                .isSuccess
+            if (ok) return true
         }
-        ServiceCompat.startForeground(this, NOTIF_ID, notif, tipo)
+        return false
     }
 
     private fun arrancarSilencio() {

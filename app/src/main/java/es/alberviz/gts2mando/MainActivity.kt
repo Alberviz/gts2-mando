@@ -5,11 +5,13 @@ import android.app.Activity
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.os.PowerManager
+import android.provider.Settings
 import android.text.InputType
 import android.view.WindowInsets
 import android.widget.Button
-import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -18,7 +20,6 @@ import android.widget.TextView
 class MainActivity : Activity() {
     private val campos = listOf("hubUrl", "hubToken", "pingUrl", "pingToken", "pingUser")
     private val edits = mutableMapOf<String, EditText>()
-    private lateinit var silencioso: CheckBox
     private lateinit var log: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -51,11 +52,6 @@ class MainActivity : Activity() {
                 guardar()
             }
         })
-        silencioso = CheckBox(this).apply {
-            text = "audioSilencioso"
-            isChecked = prefs.getBoolean("audioSilencioso", false)
-        }
-        col.addView(silencioso)
         col.addView(Button(this).apply {
             text = "Iniciar"
             setOnClickListener {
@@ -80,6 +76,10 @@ class MainActivity : Activity() {
         })
 
         requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO, Manifest.permission.POST_NOTIFICATIONS), 1)
+        // Que el ahorro de batería no mate el servicio en segundo plano.
+        if (!getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(packageName)) {
+            startActivity(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:$packageName")))
+        }
     }
 
     override fun onResume() {
@@ -97,6 +97,6 @@ class MainActivity : Activity() {
     private fun guardar() {
         val ed = getSharedPreferences("mando", Context.MODE_PRIVATE).edit()
         for ((k, e) in edits) ed.putString(k, e.text.toString().trim())
-        ed.putBoolean("audioSilencioso", silencioso.isChecked).apply()
+        ed.apply()
     }
 }
