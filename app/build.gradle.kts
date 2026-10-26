@@ -11,8 +11,8 @@ android {
         applicationId = "es.alberviz.gts2mando"
         minSdk = 29
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 4
+        versionName = "0.4"
     }
 
     compileOptions {
