@@ -1,0 +1,68 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Correa superior -->
+    <path
+        android:fillColor="#334155"
+        android:pathData="M44,18h20v14h-20z" />
+    <path
+        android:strokeColor="#1E293B"
+        android:strokeWidth="1"
+        android:pathData="M44,23h20 M44,28h20" />
+
+    <!-- Correa inferior -->
+    <path
+        android:fillColor="#334155"
+        android:pathData="M44,76h20v14h-20z" />
+    <path
+        android:strokeColor="#1E293B"
+        android:strokeWidth="1"
+        android:pathData="M44,81h20 M44,86h20" />
+
+    <!-- Botón / Corona lateral del GTS2 -->
+    <path
+        android:fillColor="#64748B"
+        android:pathData="M75,49h2.5c1.1,0 2,0.9 2,2v6c0,1.1 -0.9,2 -2,2H75z" />
+
+    <!-- Caja del reloj (borde / bisel metálico) -->
+    <path
+        android:fillColor="#475569"
+        android:pathData="M42,28h24c6.63,0 12,5.37 12,12v28c0,6.63 -5.37,12 -12,12H42c-6.63,0 -12,-5.37 -12,-12V40c0,-6.63 5.37,-12 12,-12z" />
+
+    <!-- Pantalla OLED (bisel interior) -->
+    <path
+        android:fillColor="#090D16"
+        android:pathData="M43,31h22c4.97,0 9,4.03 9,9v28c0,4.97 -4.03,9 -9,9H43c-4.97,0 -9,-4.03 -9,-9V40c0,-4.97 4.03,-9 9,-9z" />
+
+    <!-- Píldora creatina superior (verde esmeralda) -->
+    <path
+        android:fillColor="#10B981"
+        android:pathData="M51,36h6c1.1,0 2,0.9 2,2v0c0,1.1 -0.9,2 -2,2h-6c-1.1,0 -2,-0.9 -2,-2v0c0,-1.1 0.9,-2 2,-2z" />
+
+    <!-- Botón central Play/Pausa ⏯ (azul celeste) -->
+    <!-- Triángulo Play -->
+    <path
+        android:fillColor="#38BDF8"
+        android:pathData="M50,49v10l8,-5z" />
+    <!-- Barra Pausa -->
+    <path
+        android:fillColor="#38BDF8"
+        android:pathData="M59.5,49.5h2v9h-2z" />
+
+    <!-- Botón izquierdo ⏮ Comida (ámbar / micro) -->
+    <path
+        android:fillColor="#FBBF24"
+        android:pathData="M41,50h1.5v8h-1.5z M47,50l-4.5,4l4.5,4z" />
+
+    <!-- Botón derecho ⏭ Ping (rosa / corazón) -->
+    <path
+        android:fillColor="#F43F5E"
+        android:pathData="M67,50l4.5,4l-4.5,4z M72.5,50h1.5v8h-1.5z" />
+
+    <!-- Indicador de estado sutil inferior -->
+    <path
+        android:fillColor="#38BDF8"
+        android:pathData="M52,70h4c0.55,0 1,0.45 1,1v0c0,0.55 -0.45,1 -1,1h-4c-0.55,0 -1,-0.45 -1,-1v0c0,-0.55 0.45,-1 1,-1z" />
+</vector>

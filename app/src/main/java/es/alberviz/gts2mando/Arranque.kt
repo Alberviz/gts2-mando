@@ -30,7 +30,7 @@ object Arranque {
         nm.createNotificationChannel(NotificationChannel(CANAL, "Activar mando", NotificationManager.IMPORTANCE_DEFAULT))
         nm.notify(
             NOTIF_ID, NotificationCompat.Builder(ctx, CANAL)
-                .setSmallIcon(android.R.drawable.ic_media_play)
+                .setSmallIcon(R.drawable.ic_notif)
                 .setContentTitle("Mando del reloj apagado")
                 .setContentText("Toca para activarlo")
                 .setContentIntent(intentIniciar(ctx))

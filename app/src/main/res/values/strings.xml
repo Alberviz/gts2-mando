@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">GTS2 Mando</string>
+
+    <!-- Estado -->
+    <string name="estado_activo">Mando activo</string>
+    <string name="estado_inactivo">Mando apagado</string>
+    <string name="estado_subtitulo_activo">Escuchando controles del reloj</string>
+    <string name="estado_subtitulo_inactivo">Pulsa Iniciar para activar</string>
+    <string name="btn_iniciar">Iniciar</string>
+    <string name="btn_parar">Parar</string>
+
+    <!-- Leyenda de botones -->
+    <string name="leyenda_titulo">Controles del reloj</string>
+    <string name="leyenda_creatina_titulo">⏯ Play / Pausa</string>
+    <string name="leyenda_creatina_desc">Apunta la creatina del día</string>
+    <string name="leyenda_ping_titulo">⏭ Siguiente</string>
+    <string name="leyenda_ping_desc">Manda «te echo de menos» (❤)</string>
+    <string name="leyenda_comida_titulo">⏮ Anterior</string>
+    <string name="leyenda_comida_desc">Graba nota de voz de la comida</string>
+
+    <!-- Configuración -->
+    <string name="config_titulo">Configuración</string>
+    <string name="config_subtitulo">Servidores y credenciales</string>
+    <string name="label_hub_url">URL del Hub</string>
+    <string name="label_hub_token">Token del Hub</string>
+    <string name="label_ping_url">URL del Ping</string>
+    <string name="label_ping_token">Token del Ping</string>
+    <string name="label_ping_user">Usuario Ping</string>
+    <string name="btn_pegar_config">Pegar config</string>
+    <string name="config_pegada">Configuración guardada</string>
+
+    <!-- Registro -->
+    <string name="registro_titulo">Registro de eventos</string>
+    <string name="registro_vacio">Sin eventos aún…</string>
+</resources>

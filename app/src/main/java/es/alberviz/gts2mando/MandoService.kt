@@ -267,7 +267,7 @@ class MandoService : Service() {
             PendingIntent.FLAG_IMMUTABLE
         )
         val notif = NotificationCompat.Builder(this, CANAL)
-            .setSmallIcon(android.R.drawable.ic_media_play)
+            .setSmallIcon(R.drawable.ic_notif)
             .setContentTitle("GTS2 Mando")
             .setContentText(ARTISTA)
             .setOngoing(true)
