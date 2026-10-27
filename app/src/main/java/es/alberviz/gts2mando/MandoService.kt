@@ -206,7 +206,7 @@ class MandoService : Service() {
                 val inputs = getSystemService(AudioManager::class.java).getDevices(AudioManager.GET_DEVICES_INPUTS)
                     .map { "${it.productName}(tipo ${it.type})" }
                 Eventos.log("SCO no disponible. Entradas detectadas: $inputs")
-                return error("reloj no disponible")
+                return error("reloj sin BT de llamadas")
             }
             main.removeCallbacks(volverABase)
             setTitulo("⏳ Conectando reloj…")

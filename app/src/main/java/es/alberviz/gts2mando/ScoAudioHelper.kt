@@ -3,6 +3,7 @@ package es.alberviz.gts2mando
 import android.Manifest
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothHeadset
+import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothProfile
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -144,17 +145,14 @@ class ScoAudioHelper(private val context: Context) {
                 return false
             }
         }
-        val inputs = audioManager.getDevices(AudioManager.GET_DEVICES_INPUTS)
-        val outputs = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
-        val hasBtDevice = inputs.any { it.isBluetoothDevice() } || outputs.any { it.isBluetoothDevice() }
-        if (hasBtDevice) return true
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            if (audioManager.availableCommunicationDevices.any { it.isBluetoothDevice() }) return true
+        // Sin el perfil de llamadas (HFP) conectado no hay SCO posible: el fallback solo acabaría en timeout.
+        val adapter = context.getSystemService(BluetoothManager::class.java)?.adapter
+        val hfp = adapter?.getProfileConnectionState(BluetoothProfile.HEADSET)
+        if (hfp != BluetoothProfile.STATE_CONNECTED) {
+            Eventos.log("SCO: perfil de llamadas (HFP) no conectado (estado $hfp)")
+            return false
         }
-
-        @Suppress("DEPRECATION")
-        return audioManager.isBluetoothScoAvailableOffCall
+        return true
     }
 
     private fun AudioDeviceInfo.isBluetoothDevice(): Boolean {
