@@ -10,9 +10,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.media.AudioAttributes
-import android.media.AudioDeviceInfo
 import android.media.AudioFormat
-import android.media.AudioManager
 import android.media.AudioTrack
 import android.media.MediaRecorder
 import android.os.Build
@@ -50,7 +48,6 @@ class MandoService : Service() {
     @Volatile private var silencioActivo = false
     private var recorder: MediaRecorder? = null
     private val audioFile by lazy { File(cacheDir, "comida.ogg") }
-    private val scoHelper by lazy { ScoAudioHelper(this) }
     private val volverABase = Runnable { setTitulo(tituloBase()) }
     private val cortarGrabacion = Runnable {
         Eventos.log("corte automático a los 20 s")
@@ -106,7 +103,6 @@ class MandoService : Service() {
         recorder?.runCatching { stop() }
         recorder?.release()
         recorder = null
-        scoHelper.stopSco()
         silencioActivo = false
         silencio?.runCatching { stop() }
         silencio?.release()
@@ -122,29 +118,21 @@ class MandoService : Service() {
 
     private val callback = object : MediaSessionCompat.Callback() {
         override fun onPlay() {
-            if (recorder != null || scoHelper.isActive) return finalizarOCancelarGrabacion()
+            if (recorder != null) return pararYEnviar()
             creatina()
         }
         override fun onPause() {
-            if (recorder != null || scoHelper.isActive) return finalizarOCancelarGrabacion()
+            if (recorder != null) return pararYEnviar()
             creatina()
         }
         override fun onSkipToNext() {
-            if (recorder != null || scoHelper.isActive) {
+            if (recorder != null) {
                 Eventos.log("⏭ ping ignorado: grabación en curso")
                 return
             }
             ping()
         }
         override fun onSkipToPrevious() = comida()
-    }
-
-    private fun finalizarOCancelarGrabacion() {
-        if (scoHelper.isActive && !scoHelper.isConnected) {
-            abortarGrabacion("cancelado")
-        } else {
-            pararYEnviar()
-        }
     }
 
     private fun creatina() {
@@ -185,69 +173,15 @@ class MandoService : Service() {
 
     private fun comida() {
         Eventos.log("⏮ comida")
-        if (recorder != null || scoHelper.isActive) return finalizarOCancelarGrabacion()
+        if (recorder != null) return pararYEnviar()
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             return error("sin permiso de micro")
         }
-        val origen = prefs.getString(MainActivity.PREF_MICRO_ORIGEN, MainActivity.MICRO_PHONE) ?: MainActivity.MICRO_PHONE
-        if (origen == MainActivity.MICRO_PHONE) {
-            if (iniciarRecorder(MediaRecorder.AudioSource.MIC, null, reportarError = true)) {
-                main.removeCallbacks(volverABase)
-                main.postDelayed(cortarGrabacion, MAX_GRABACION_MS)
-                setTitulo("🎙 Grabando… ⏮ para enviar")
-            }
-        } else {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                if (checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-                    return error("sin permiso bluetooth")
-                }
-            }
-            if (!scoHelper.isScoAvailable()) {
-                val inputs = getSystemService(AudioManager::class.java).getDevices(AudioManager.GET_DEVICES_INPUTS)
-                    .map { "${it.productName}(tipo ${it.type})" }
-                Eventos.log("SCO no disponible. Entradas detectadas: $inputs")
-                return error("reloj sin BT de llamadas")
-            }
-            main.removeCallbacks(volverABase)
-            setTitulo("⏳ Conectando reloj…")
-            scoHelper.startSco(object : ScoAudioHelper.Listener {
-                override fun onStartRecorder(device: AudioDeviceInfo?): Boolean {
-                    return iniciarRecorder(MediaRecorder.AudioSource.VOICE_COMMUNICATION, device, reportarError = false)
-                }
-
-                override fun onScoConnected() {
-                    main.removeCallbacks(cortarGrabacion)
-                    main.postDelayed(cortarGrabacion, MAX_GRABACION_MS)
-                    main.removeCallbacks(volverABase)
-                    setTitulo("🎙 Habla al reloj… (cuelga para enviar)")
-                    Eventos.log("grabando desde micro del reloj")
-                }
-
-                override fun onScoHangup() {
-                    Eventos.log("corte por colgado en reloj")
-                    pararYEnviar()
-                }
-
-                override fun onScoError(reason: String) {
-                    abortarGrabacion(reason)
-                }
-            })
-        }
-    }
-
-    private fun iniciarRecorder(
-        audioSource: Int,
-        preferredDevice: AudioDeviceInfo?,
-        reportarError: Boolean = true
-    ): Boolean {
         audioFile.delete()
         @Suppress("DEPRECATION")
         val mr = if (Build.VERSION.SDK_INT >= 31) MediaRecorder(this) else MediaRecorder()
-        return try {
-            mr.setAudioSource(audioSource)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && preferredDevice != null) {
-                mr.setPreferredDevice(preferredDevice)
-            }
+        try {
+            mr.setAudioSource(MediaRecorder.AudioSource.MIC)
             mr.setOutputFormat(MediaRecorder.OutputFormat.OGG)
             mr.setAudioEncoder(MediaRecorder.AudioEncoder.OPUS)
             mr.setAudioChannels(1)
@@ -256,29 +190,25 @@ class MandoService : Service() {
             mr.prepare()
             mr.start()
             recorder = mr
-            true
+            main.removeCallbacks(volverABase)
+            main.postDelayed(cortarGrabacion, MAX_GRABACION_MS)
+            setTitulo("🎙 Grabando… ⏮ para enviar")
+            Eventos.log("grabando desde micro del móvil")
         } catch (e: Exception) {
             Eventos.log("fallo MediaRecorder: ${e.javaClass.simpleName}")
             mr.runCatching { stop() }
             mr.release()
             recorder = null
-            if (reportarError) error(e)
-            false
+            error(e)
         }
     }
 
     private fun pararYEnviar() {
         main.removeCallbacks(cortarGrabacion)
-        val mr = recorder
+        val mr = recorder ?: return
         recorder = null
-        if (mr == null) {
-            scoHelper.stopSco()
-            setTitulo(tituloBase())
-            return
-        }
         val ok = runCatching { mr.stop() }.isSuccess
         mr.release()
-        scoHelper.stopSco()
         if (!ok || !audioFile.exists() || audioFile.length() == 0L) {
             return error("grabación vacía")
         }
@@ -294,17 +224,6 @@ class MandoService : Service() {
                 }.onFailure { error(it) }
             }
         }
-    }
-
-    private fun abortarGrabacion(motivo: String) {
-        main.removeCallbacks(cortarGrabacion)
-        val mr = recorder
-        recorder = null
-        mr?.runCatching { stop() }
-        mr?.release()
-        scoHelper.stopSco()
-        audioFile.delete()
-        error(motivo)
     }
 
     // --- Título en el reloj ---
@@ -336,7 +255,7 @@ class MandoService : Service() {
     private fun tituloTemporal(titulo: String) {
         main.removeCallbacks(volverABase)
         setTitulo(titulo)
-        if (recorder == null && !scoHelper.isActive) main.postDelayed(volverABase, TITULO_TEMPORAL_MS)
+        if (recorder == null) main.postDelayed(volverABase, TITULO_TEMPORAL_MS)
     }
 
     private fun error(e: Throwable) = error(
